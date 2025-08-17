@@ -12,14 +12,7 @@ const images = [
 const ERASER = '__ERASER__';
 const DISABLE_HOVER = '__DISABLE_HOVER__';
 
-function PaletteImage({
-                          src,
-                          tileSize,
-                          selected,
-                          onSelect,
-                          isEraser = false,
-                          isDisableHover = false,
-                      }: {
+function PaletteImage({ src, tileSize, selected, onSelect, isEraser = false, isDisableHover = false }: {
     src: string;
     tileSize: number;
     selected: boolean;
@@ -54,14 +47,7 @@ function PaletteImage({
     );
 }
 
-function GridCell({
-                      src,
-                      tileSize,
-                      onPaint,
-                      onRemove,
-                      onMouseDown,
-                      onMouseEnter,
-                  }: {
+function GridCell({ src, tileSize, onPaint, onRemove, onMouseDown, onMouseEnter }: {
     src: string | null;
     tileSize: number;
     onPaint: () => void;
@@ -92,14 +78,37 @@ function GridCell({
     );
 }
 
+const STORAGE_KEY = 'pixel-art-state';
+
 function App() {
-    const [width, setWidth] = useState(20);
-    const [height, setHeight] = useState(15);
-    const [tileSize, setTileSize] = useState(30);
-    const [grid, setGrid] = useState<(string | null)[]>(Array(20 * 15).fill(null));
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [drawOnHover, setDrawOnHover] = useState(true);
+    // Load from localStorage if available
+    const loadState = () => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return null;
+            return JSON.parse(raw);
+        } catch {
+            return null;
+        }
+    };
+
+    const saved = loadState();
+
+    const [width, setWidth] = useState(saved?.width ?? 20);
+    const [height, setHeight] = useState(saved?.height ?? 15);
+    const [tileSize, setTileSize] = useState(saved?.tileSize ?? 30);
+    const [grid, setGrid] = useState<(string | null)[]>(saved?.grid ?? Array((saved?.width ?? 20) * (saved?.height ?? 15)).fill(null));
+    const [selectedImage, setSelectedImage] = useState<string | null>(saved?.selectedImage ?? null);
+    const [drawOnHover, setDrawOnHover] = useState(saved?.drawOnHover ?? true);
     const [isDrawing, setIsDrawing] = useState(false);
+
+    // Save to localStorage on any relevant state change
+    React.useEffect(() => {
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ width, height, tileSize, grid, selectedImage, drawOnHover })
+        );
+    }, [width, height, tileSize, grid, selectedImage, drawOnHover]);
 
     React.useEffect(() => {
         setGrid((prev) => {
@@ -151,7 +160,6 @@ function App() {
         setIsDrawing(false);
     };
 
-    // Palette selection logic
     const handlePaletteSelect = (src: string) => {
         setSelectedImage(src);
         if (src === DISABLE_HOVER) {
