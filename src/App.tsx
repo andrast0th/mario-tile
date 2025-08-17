@@ -2,8 +2,6 @@ import React, { useState, useRef } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-const gridRows = 2; // Configurable
-const gridCols = 3; // Configurable
 const images = [
     'img/negru.webp',
     'img/rosu.webp',
@@ -90,7 +88,19 @@ function GridCell({
 }
 
 function App() {
-    const [grid, setGrid] = useState<(string | null)[]>(Array(gridRows * gridCols).fill(null));
+    const [width, setWidth] = useState(3);
+    const [height, setHeight] = useState(2);
+    const [grid, setGrid] = useState<(string | null)[]>(Array(2 * 3).fill(null));
+
+    // Update grid size when width or height changes
+    React.useEffect(() => {
+        setGrid((prev) => {
+            const newSize = width * height;
+            const newGrid = prev.slice(0, newSize);
+            while (newGrid.length < newSize) newGrid.push(null);
+            return newGrid;
+        });
+    }, [width, height]);
 
     const handleDropImage = (cellIdx: number, src: string, fromIndex?: number) => {
         setGrid((prev) => {
@@ -118,15 +128,36 @@ function App() {
                     <PaletteImage key={src} src={src} />
                 ))}
             </div>
-
+            <div style={{ marginBottom: 16 }}>
+                <label>
+                    Width:
+                    <input
+                        type="number"
+                        min={1}
+                        value={width}
+                        onChange={e => setWidth(Math.max(1, Number(e.target.value)))}
+                        style={{ width: 50, marginLeft: 4, marginRight: 16 }}
+                    />
+                </label>
+                <label>
+                    Height:
+                    <input
+                        type="number"
+                        min={1}
+                        value={height}
+                        onChange={e => setHeight(Math.max(1, Number(e.target.value)))}
+                        style={{ width: 50, marginLeft: 4 }}
+                    />
+                </label>
+            </div>
             <div>
                 <p>Drag and drop onto the grid, double click to remove.</p>
             </div>
             <div
                 style={{
                     display: 'grid',
-                    gridTemplateColumns: `repeat(${gridCols}, 100px)`,
-                    gridTemplateRows: `repeat(${gridRows}, 100px)`,
+                    gridTemplateColumns: `repeat(${width}, 100px)`,
+                    gridTemplateRows: `repeat(${height}, 100px)`,
                     gap: 4,
                 }}
             >
