@@ -10,15 +10,14 @@ const images = [
 ];
 
 const ERASER = '__ERASER__';
-const DISABLE_HOVER = '__DISABLE_HOVER__';
+const STORAGE_KEY = 'pixel-art-state';
 
-function PaletteImage({ src, tileSize, selected, onSelect, isEraser = false, isDisableHover = false }: {
+function PaletteImage({ src, tileSize, selected, onSelect, isEraser = false }: {
     src: string;
     tileSize: number;
     selected: boolean;
     onSelect: () => void;
     isEraser?: boolean;
-    isDisableHover?: boolean;
 }) {
     return (
         <div
@@ -32,25 +31,22 @@ function PaletteImage({ src, tileSize, selected, onSelect, isEraser = false, isD
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: isEraser ? '#f8d7da' : isDisableHover ? '#e2e3e5' : undefined,
+                background: isEraser ? '#f8d7da' : undefined,
             }}
-            title={isEraser ? 'Eraser' : isDisableHover ? 'Disable draw on hover' : undefined}
+            title={isEraser ? 'Eraser' : undefined}
         >
             {isEraser ? (
                 <span style={{ fontSize: tileSize * 0.5, color: '#c00', fontWeight: 'bold' }}>🧹</span>
-            ) : isDisableHover ? (
-                <span style={{ fontSize: tileSize * 0.5, color: '#888', fontWeight: 'bold' }}>🚫</span>
             ) : (
-                <img src={src} alt="" style={{ width: '100%', height: '100%' }} />
+                <img src={src} alt="" style={{ width: '100%', height: '100%' }} draggable={false} />
             )}
         </div>
     );
 }
 
-function GridCell({ src, tileSize, onPaint, onRemove, onMouseDown, onMouseEnter }: {
+function GridCell({ src, tileSize, onRemove, onMouseDown, onMouseEnter }: {
     src: string | null;
     tileSize: number;
-    onPaint: () => void;
     onRemove: () => void;
     onMouseDown: (e: React.MouseEvent) => void;
     onMouseEnter: (e: React.MouseEvent) => void;
@@ -59,6 +55,7 @@ function GridCell({ src, tileSize, onPaint, onRemove, onMouseDown, onMouseEnter 
         <div
             onMouseDown={onMouseDown}
             onMouseEnter={onMouseEnter}
+            onDoubleClick={onRemove}
             style={{
                 width: tileSize,
                 height: tileSize,
@@ -72,13 +69,11 @@ function GridCell({ src, tileSize, onPaint, onRemove, onMouseDown, onMouseEnter 
             }}
         >
             {src && (
-                <img src={src} alt="" style={{ width: '100%', height: '100%' }} />
+                <img src={src} alt="" style={{ width: '100%', height: '100%' }} draggable={false} />
             )}
         </div>
     );
 }
-
-const STORAGE_KEY = 'pixel-art-state';
 
 function App() {
     // Load from localStorage if available
@@ -99,16 +94,15 @@ function App() {
     const [tileSize, setTileSize] = useState(saved?.tileSize ?? 30);
     const [grid, setGrid] = useState<(string | null)[]>(saved?.grid ?? Array((saved?.width ?? 20) * (saved?.height ?? 15)).fill(null));
     const [selectedImage, setSelectedImage] = useState<string | null>(saved?.selectedImage ?? null);
-    const [drawOnHover, setDrawOnHover] = useState(saved?.drawOnHover ?? true);
     const [isDrawing, setIsDrawing] = useState(false);
 
     // Save to localStorage on any relevant state change
     React.useEffect(() => {
         localStorage.setItem(
             STORAGE_KEY,
-            JSON.stringify({ width, height, tileSize, grid, selectedImage, drawOnHover })
+            JSON.stringify({ width, height, tileSize, grid, selectedImage })
         );
-    }, [width, height, tileSize, grid, selectedImage, drawOnHover]);
+    }, [width, height, tileSize, grid, selectedImage]);
 
     React.useEffect(() => {
         setGrid((prev) => {
@@ -124,7 +118,7 @@ function App() {
             const newGrid = [...prev];
             if (selectedImage === ERASER) {
                 newGrid[idx] = null;
-            } else if (selectedImage && selectedImage !== DISABLE_HOVER) {
+            } else if (selectedImage) {
                 newGrid[idx] = selectedImage;
             }
             return newGrid;
@@ -145,7 +139,7 @@ function App() {
     };
 
     const handleMouseEnter = (idx: number) => {
-        if ((drawOnHover || isDrawing) && selectedImage && selectedImage !== DISABLE_HOVER) {
+        if (isDrawing && selectedImage) {
             handlePaint(idx);
         }
     };
@@ -160,15 +154,6 @@ function App() {
         setIsDrawing(false);
     };
 
-    const handlePaletteSelect = (src: string) => {
-        setSelectedImage(src);
-        if (src === DISABLE_HOVER) {
-            setDrawOnHover(false);
-        } else {
-            setDrawOnHover(true);
-        }
-    };
-
     return (
         <div>
             <div style={{ display: 'flex', marginBottom: 16 }}>
@@ -176,15 +161,8 @@ function App() {
                     src={ERASER}
                     tileSize={tileSize}
                     selected={selectedImage === ERASER}
-                    onSelect={() => handlePaletteSelect(ERASER)}
+                    onSelect={() => setSelectedImage(ERASER)}
                     isEraser
-                />
-                <PaletteImage
-                    src={DISABLE_HOVER}
-                    tileSize={tileSize}
-                    selected={selectedImage === DISABLE_HOVER}
-                    onSelect={() => handlePaletteSelect(DISABLE_HOVER)}
-                    isDisableHover
                 />
                 {images.map((src) => (
                     <PaletteImage
@@ -192,7 +170,7 @@ function App() {
                         src={src}
                         tileSize={tileSize}
                         selected={selectedImage === src}
-                        onSelect={() => handlePaletteSelect(src)}
+                        onSelect={() => setSelectedImage(src)}
                     />
                 ))}
             </div>
@@ -232,9 +210,7 @@ function App() {
             </div>
             <div>
                 <p>
-                    Select a tile (or the eraser 🧹), then draw on the grid by clicking and dragging.
-                    <br />
-                    Select 🚫 to disable draw on hover (painting only on click/drag).
+                    Select a tile (or the eraser 🧹), then draw on the grid by clicking and dragging. Double click a cell to remove its image.
                 </p>
             </div>
             <div
@@ -251,7 +227,6 @@ function App() {
                         key={idx}
                         src={src}
                         tileSize={tileSize}
-                        onPaint={() => handlePaint(idx)}
                         onRemove={() => handleRemove(idx)}
                         onMouseDown={() => handleMouseDown(idx)}
                         onMouseEnter={() => handleMouseEnter(idx)}
