@@ -18,12 +18,14 @@ const ItemType = 'IMAGE';
 type DragItem = { src: string; fromPalette?: boolean; fromIndex?: number };
 
 function PaletteImage({ src }: { src: string }) {
+    const ref = useRef<HTMLDivElement>(null);
     const [, drag] = useDrag({
         type: ItemType,
         item: { src, fromPalette: true },
     });
+    drag(ref);
     return (
-        <div ref={drag} style={{ width: 100, height: 100, margin: 4, cursor: 'grab' }}>
+        <div ref={ref} style={{ width: 100, height: 100, margin: 4, cursor: 'grab' }}>
             <img src={src} alt="" style={{ width: '100%', height: '100%' }} />
         </div>
     );
@@ -47,7 +49,7 @@ function GridCell({
         drop: (item: DragItem) => {
             onDropImage(item.src, item.fromIndex);
         },
-        canDrop: (item: DragItem) => !src || item.fromIndex !== undefined, // allow drop if empty or moving
+        canDrop: (item: DragItem) => !src || item.fromIndex !== undefined,
     });
 
     const [, drag] = useDrag({
@@ -66,6 +68,7 @@ function GridCell({
     return (
         <div
             ref={ref}
+            onDoubleClick={() => src && onRemoveImage()}
             style={{
                 width: 100,
                 height: 100,
@@ -75,9 +78,13 @@ function GridCell({
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: 2,
+                position: 'relative',
+                cursor: src ? 'pointer' : 'default',
             }}
         >
-            {src && <img src={src} alt="" style={{ width: '100%', height: '100%' }} />}
+            {src && (
+                <img src={src} alt="" style={{ width: '100%', height: '100%' }} />
+            )}
         </div>
     );
 }
@@ -89,7 +96,6 @@ function App() {
         setGrid((prev) => {
             const newGrid = [...prev];
             if (fromIndex !== undefined) {
-                // Move from another cell
                 newGrid[fromIndex] = null;
             }
             newGrid[cellIdx] = src;
