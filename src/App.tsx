@@ -5,12 +5,12 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 const gridRows = 2; // Configurable
 const gridCols = 3; // Configurable
 const images = [
-    '/img/negru.webp',
-    '/img/rosu.webp',
-    '/img/verde.webp',
-    '/img/galben.webp',
-    '/img/gri.webp',
-    '/img/albastru.webp',
+    'img/negru.webp',
+    'img/rosu.webp',
+    'img/verde.webp',
+    'img/galben.webp',
+    'img/gri.webp',
+    'img/albastru.webp',
 ];
 
 const ItemType = 'IMAGE';
