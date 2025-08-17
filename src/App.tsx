@@ -118,6 +118,10 @@ function App() {
                     <PaletteImage key={src} src={src} />
                 ))}
             </div>
+
+            <div>
+                <p>Drag and drop onto the grid, double click to remove.</p>
+            </div>
             <div
                 style={{
                     display: 'grid',
